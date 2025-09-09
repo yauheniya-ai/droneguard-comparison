@@ -71,7 +71,7 @@ video:
 
 ### Start All Services
 
-**Manual Start (Recommended for testing)**
+#### Manual Start (Recommended for testing)
 
 ```bash
 # Terminal 1: FastAPI App (droneguard-fastapi) -> activate the env
@@ -88,12 +88,26 @@ python dashboard.py
 
 ```
 
+#### Automatic Start (Convenient for development)
+
+You can use the provided script to start **all services at once**:
+
+```bash
+./start_all.sh
+```
+
+The script will:
+- Start FastAPI (http://localhost:8000)
+- Start Spring Boot (http://localhost:8080)
+- Start the Performance Dashboard (http://localhost:3000)
+
+Press Ctrl+C to stop all services together.
 
 ### Access the Comparison
 
 Open your browser and navigate to: **http://localhost:3000**
 
-## 📊 What You'll See
+## 🔮 What You'll See
 
 ### Real-time Comparison Dashboard Features:
 
