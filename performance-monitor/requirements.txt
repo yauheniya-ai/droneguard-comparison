@@ -1,0 +1,11 @@
+# python version 3.12
+flask
+opencv-python
+numpy
+flask-cors
+psutil
+requests
+pynvml
+ipykernel
+jupyter
+pandas

@@ -1,0 +1,23 @@
+app:
+  title: "DroneGuard FastAPI"
+  description: "Real-time drone detection system"
+  version: "0.1.0"
+  host: "127.0.0.1"
+  port: 8000
+  debug: false
+
+video:
+  source: 1 # 0, 1, 2, etc. for webcam, or path to a video file like "drone_footage.mov"
+  width: 1980
+  height: 1020
+  fps: 30
+
+model:
+  path: "models/best.pt"
+  confidence_threshold: 0.5
+  iou_threshold: 0.4
+  input_size: 128
+
+streaming:
+  quality: 90  # JPEG quality (1-100)
+  buffer_size: 1

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DroneGuard Performance Comparison</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .app-panel {
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .app-panel.fastapi {
+            background: #009688;
+        }
+
+        .app-panel.springboot {
+            background: #6db33f;
+        }
+
+        .app-panel h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-circle {
+            background: white;
+            border-radius: 50%;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+        }
+
+        .logo-svg {
+            height: 32px;
+            width: auto;
+            max-width: 32px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.healthy {
+            background: #51cf66;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 1.5rem;
+        }
+
+        .video-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.9rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(0, 1fr);
+            gap: 1rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-card h4 {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+        }
+
+        .metric-card .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .performance-section {
+            background: #333333;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-top: 2rem;
+        }
+
+        .performance-section h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            height: 300px;
+        }
+
+        .chart-container h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: calc(100% - 3rem);
+        }
+
+        .export-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .export-btn {
+            background: #009688;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 0.5rem;
+        }
+
+        .export-btn:hover {
+            background: #00796b;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            opacity: 0.7;
+            color: white;
+        }
+
+        .error {
+            text-align: center;
+            padding: 2rem;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ DroneGuard Performance Comparison</h1>
+        <p>Real-time side-by-side comparison of FastAPI vs Spring Boot implementations</p>
+    </div>
+
+    <div class="container">
+        <div class="comparison-grid">
+            <!-- FastAPI Panel -->
+            <div class="app-panel fastapi">
+                <h2>
+                    FastAPI App
+                    <div class="status-indicator" id="fastapi-status"></div>
+                </h2>
+                
+                <div class="video-container">
+                    <img class="video-stream" id="fastapi-stream" 
+                         src="http://localhost:8000/api/video/stream" 
+                         alt="FastAPI Stream">
+                    <div class="video-overlay" id="fastapi-fps">FPS: 30</div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>CPU Usage</h4>
+                        <div class="value" id="fastapi-cpu">-- %</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Memory Usage</h4>
+                        <div class="value" id="fastapi-memory">-- MB</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Response Time</h4>
+                        <div class="value" id="fastapi-response-time">-- ms</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Active Threads</h4>
+                        <div class="value" id="fastapi-threads">--</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Spring Boot Panel -->
+            <div class="app-panel springboot">
+                <h2>
+                    Spring Boot App
+                    <div class="status-indicator" id="springboot-status"></div>
+                </h2>
+                
+                <div class="video-container">
+                    <img class="video-stream" id="springboot-stream" 
+                         src="http://localhost:8080/video/stream" 
+                         alt="Spring Boot Stream">
+                    <div class="video-overlay" id="springboot-fps">FPS: 30</div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>CPU Usage</h4>
+                        <div class="value" id="springboot-cpu">-- %</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Memory Usage</h4>
+                        <div class="value" id="springboot-memory">-- MB</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Response Time</h4>
+                        <div class="value" id="springboot-response-time">-- ms</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Active Threads</h4>
+                        <div class="value" id="springboot-threads">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Charts Section -->
+        <div class="performance-section">
+            <h2>Performance Analytics</h2>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>CPU Usage</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>Memory Usage</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="memoryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>Response Time</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="responseTimeChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>System Resources</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="systemChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ComparisonDashboard {
+            constructor() {
+                this.charts = {};
+                this.data = {
+                    timestamps: [],
+                    fastapi: { cpu: [], memory: [], responseTime: [] },
+                    springboot: { cpu: [], memory: [], responseTime: [] },
+                    system: { cpu: [], memory: [] }
+                };
+                this.maxDataPoints = 60; // Keep last 60 data points (1 minute at 1Hz)
+                
+                this.init();
+            }
+
+            init() {
+                this.setupCharts();
+                this.startDataCollection();
+                this.setupVideoStreams();
+            }
+
+            setupCharts() {
+                const chartConfig = {
+                    type: 'line',
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'second',
+                                    displayFormats: {
+                                        second: 'HH:mm:ss'
+                                    }
+                                },
+                                ticks: { 
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    maxTicksLimit: 10
+                                },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: 'rgba(255, 255, 255, 0.9)' }
+                            }
+                        },
+                        elements: {
+                            point: { radius: 2 },
+                            line: { tension: 0.2 }
+                        },
+                        animation: {
+                            duration: 0 // Disable animations for real-time updates
+                        }
+                    }
+                };
+
+                // CPU Chart
+                this.charts.cpu = new Chart(document.getElementById('cpuChart'), {
+                    ...chartConfig,
+                    data: {
+                        datasets: [
+                            {
+                                label: 'FastAPI CPU %',
+                                borderColor: '#009688',
+                                backgroundColor: 'rgba(81, 207, 102, 0.1)',
+                                data: []
+                            },
+                            {
+                                label: 'Spring Boot CPU %',
+                                borderColor: '#6db33f',
+                                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                                data: []
+                            }
+                        ]
+                    }
+                });
+
+                // Memory Chart
+                this.charts.memory = new Chart(document.getElementById('memoryChart'), {
+                    ...chartConfig,
+                    data: {
+                        datasets: [
+                            {
+                                label: 'FastAPI (MB)',
+                                borderColor: '#009688',
+                                backgroundColor: 'rgba(51, 154, 240, 0.1)',
+                                data: []
+                            },
+                            {
+                                label: 'Spring Boot (MB)',
+                                borderColor: '#6db33f',
+                                backgroundColor: 'rgba(255, 212, 59, 0.1)',
+                                data: []
+                            }
+                        ]
+                    }
+                });
+
+                // Response Time Chart
+                this.charts.responseTime = new Chart(document.getElementById('responseTimeChart'), {
+                    ...chartConfig,
+                    data: {
+                        datasets: [
+                            {
+                                label: 'FastAPI (ms)',
+                                borderColor: '#009688',
+                                backgroundColor: 'rgba(116, 192, 252, 0.1)',
+                                data: []
+                            },
+                            {
+                                label: 'Spring Boot (ms)',
+                                borderColor: '#6db33f',
+                                backgroundColor: 'rgba(255, 168, 168, 0.1)',
+                                data: []
+                            }
+                        ]
+                    }
+                });
+
+                // System Chart
+                this.charts.system = new Chart(document.getElementById('systemChart'), {
+                    ...chartConfig,
+                    data: {
+                        datasets: [
+                            {
+                                label: 'System CPU %',
+                                borderColor: '#da77f2',
+                                backgroundColor: 'rgba(218, 119, 242, 0.1)',
+                                data: []
+                            },
+                            {
+                                label: 'System Memory %',
+                                borderColor: '#ffd43b',
+                                backgroundColor: 'rgba(255, 212, 59, 0.1)',
+                                data: []
+                            }
+                        ]
+                    }
+                });
+            }
+
+            setupVideoStreams() {
+                const streamConfigs = {
+                    'fastapi': 'http://localhost:8000/api/video/stream',
+                    'springboot': 'http://localhost:8080/video/stream'
+                };
+                
+                Object.entries(streamConfigs).forEach(([app, url]) => {
+                    const img = document.getElementById(`${app}-stream`);
+                    
+                    const refreshStream = () => {
+                        const timestamp = new Date().getTime();
+                        img.src = `${url}?t=${timestamp}`;
+                    };
+                    
+                    img.onload = () => {
+                        console.log(`${app} stream loaded`);
+                    };
+                    
+                    img.onerror = () => {
+                        console.error(`${app} stream error - retrying in 5 seconds`);
+                        // Show placeholder or error state
+                        setTimeout(refreshStream, 5000);
+                    };
+                    
+                    // Initial load
+                    refreshStream();
+                    
+                    // Refresh stream periodically to prevent stale connections
+                    setInterval(refreshStream, 10000); // Every 10 seconds for more frequent refresh
+                });
+            }
+
+            startDataCollection() {
+                // Collect data every second
+                setInterval(() => {
+                    this.collectMetrics();
+                }, 1000);
+                
+                // Initial collection
+                this.collectMetrics();
+            }
+
+            async collectMetrics() {
+                try {
+                    const response = await fetch('/api/metrics');
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const data = await response.json();
+                    
+                    this.updateMetrics(data);
+                    this.updateCharts(data);
+                    this.updateStatusIndicators(data);
+                    
+                } catch (error) {
+                    console.error('Failed to collect metrics:', error);
+                    // Show error state
+                    this.showErrorState();
+                }
+            }
+
+            showErrorState() {
+                // Set all metrics to error state
+                ['fastapi', 'springboot'].forEach(app => {
+                    document.getElementById(`${app}-response-time`).textContent = 'ERROR';
+                    document.getElementById(`${app}-memory`).textContent = 'ERROR';
+                    document.getElementById(`${app}-cpu`).textContent = 'ERROR';
+                    document.getElementById(`${app}-threads`).textContent = 'ERROR';
+                    document.getElementById(`${app}-status`).className = 'status-indicator';
+                });
+            }
+
+            updateMetrics(data) {
+                // Update FastAPI metrics
+                if (data.fastapi) {
+                    document.getElementById('fastapi-response-time').textContent = 
+                        `${Math.round(data.fastapi.response_time || 0)} ms`;
+                    document.getElementById('fastapi-memory').textContent = 
+                        `${Math.round(data.fastapi.memory_mb || 0)} MB`;
+                    document.getElementById('fastapi-cpu').textContent = 
+                        `${(data.fastapi.cpu_percent || 0).toFixed(1)}%`;
+                    document.getElementById('fastapi-threads').textContent = 
+                        data.fastapi.threads || '--';
+                    
+                    // Update FPS if available
+                    if (data.fastapi.fps) {
+                        document.getElementById('fastapi-fps').textContent = 
+                            `FPS: ${data.fastapi.fps.toFixed(1)}`;
+                    }
+                } else {
+                    document.getElementById('fastapi-response-time').textContent = '-- ms';
+                    document.getElementById('fastapi-memory').textContent = '-- MB';
+                    document.getElementById('fastapi-cpu').textContent = '-- %';
+                    document.getElementById('fastapi-threads').textContent = '--';
+                }
+
+                // Update Spring Boot metrics
+                if (data.springboot) {
+                    document.getElementById('springboot-response-time').textContent = 
+                        `${Math.round(data.springboot.response_time || 0)} ms`;
+                    document.getElementById('springboot-memory').textContent = 
+                        `${Math.round(data.springboot.memory_mb || 0)} MB`;
+                    document.getElementById('springboot-cpu').textContent = 
+                        `${(data.springboot.cpu_percent || 0).toFixed(1)}%`;
+                    document.getElementById('springboot-threads').textContent = 
+                        data.springboot.threads || '--';
+                    
+                    // Update FPS if available
+                    if (data.springboot.fps) {
+                        document.getElementById('springboot-fps').textContent = 
+                            `FPS: ${data.springboot.fps.toFixed(1)}`;
+                    }
+                } else {
+                    document.getElementById('springboot-response-time').textContent = '-- ms';
+                    document.getElementById('springboot-memory').textContent = '-- MB';
+                    document.getElementById('springboot-cpu').textContent = '-- %';
+                    document.getElementById('springboot-threads').textContent = '--';
+                }
+            }
+
+            updateStatusIndicators(data) {
+                const fastapiStatus = document.getElementById('fastapi-status');
+                const springbootStatus = document.getElementById('springboot-status');
+                
+                fastapiStatus.className = `status-indicator ${data.fastapi?.healthy ? 'healthy' : ''}`;
+                springbootStatus.className = `status-indicator ${data.springboot?.healthy ? 'healthy' : ''}`;
+            }
+
+            updateCharts(data) {
+                const now = new Date();
+                
+                // Add new data point
+                this.data.timestamps.push(now);
+                
+                if (data.fastapi) {
+                    this.data.fastapi.cpu.push({x: now, y: data.fastapi.cpu_percent || 0});
+                    this.data.fastapi.memory.push({x: now, y: data.fastapi.memory_mb || 0});
+                    this.data.fastapi.responseTime.push({x: now, y: data.fastapi.response_time || 0});
+                } else {
+                    this.data.fastapi.cpu.push({x: now, y: 0});
+                    this.data.fastapi.memory.push({x: now, y: 0});
+                    this.data.fastapi.responseTime.push({x: now, y: 0});
+                }
+                
+                if (data.springboot) {
+                    this.data.springboot.cpu.push({x: now, y: data.springboot.cpu_percent || 0});
+                    this.data.springboot.memory.push({x: now, y: data.springboot.memory_mb || 0});
+                    this.data.springboot.responseTime.push({x: now, y: data.springboot.response_time || 0});
+                } else {
+                    this.data.springboot.cpu.push({x: now, y: 0});
+                    this.data.springboot.memory.push({x: now, y: 0});
+                    this.data.springboot.responseTime.push({x: now, y: 0});
+                }
+                
+                if (data.system) {
+                    this.data.system.cpu.push({x: now, y: data.system.cpu_percent || 0});
+                    this.data.system.memory.push({x: now, y: data.system.memory_percent || 0});
+                } else {
+                    this.data.system.cpu.push({x: now, y: 0});
+                    this.data.system.memory.push({x: now, y: 0});
+                }
+
+                // Limit data points
+                if (this.data.timestamps.length > this.maxDataPoints) {
+                    this.data.timestamps.shift();
+                    Object.keys(this.data.fastapi).forEach(key => this.data.fastapi[key].shift());
+                    Object.keys(this.data.springboot).forEach(key => this.data.springboot[key].shift());
+                    Object.keys(this.data.system).forEach(key => this.data.system[key].shift());
+                }
+
+                // Update chart data
+                this.charts.cpu.data.datasets[0].data = this.data.fastapi.cpu;
+                this.charts.cpu.data.datasets[1].data = this.data.springboot.cpu;
+                this.charts.cpu.update('none');
+
+                this.charts.memory.data.datasets[0].data = this.data.fastapi.memory;
+                this.charts.memory.data.datasets[1].data = this.data.springboot.memory;
+                this.charts.memory.update('none');
+
+                this.charts.responseTime.data.datasets[0].data = this.data.fastapi.responseTime;
+                this.charts.responseTime.data.datasets[1].data = this.data.springboot.responseTime;
+                this.charts.responseTime.update('none');
+
+                this.charts.system.data.datasets[0].data = this.data.system.cpu;
+                this.charts.system.data.datasets[1].data = this.data.system.memory;
+                this.charts.system.update('none');
+            }
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ComparisonDashboard();
+        });
+        
+        // Export functionality
+        window.exportCSV = async function() {
+            try {
+                const response = await fetch('/export/csv');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `performance_metrics_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    // Update export info
+                    document.getElementById('export-info').textContent = 'Downloaded!';
+                    setTimeout(() => {
+                        document.getElementById('export-info').textContent = '';
+                    }, 3000);
+                } else {
+                    throw new Error('Export failed');
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                document.getElementById('export-info').textContent = 'Export failed';
+                setTimeout(() => {
+                    document.getElementById('export-info').textContent = '';
+                }, 3000);
+            }
+        };
+
+        // Update export info periodically
+        async function updateExportInfo() {
+            try {
+                const response = await fetch('/export/info');
+                const data = await response.json();
+                const info = document.getElementById('export-info');
+                if (data.records_available > 0) {
+                    info.textContent = `${data.records_available} records`;
+                }
+            } catch (error) {
+                console.error('Failed to get export info:', error);
+            }
+        }
+
+        setInterval(updateExportInfo, 5000);
+        updateExportInfo();
+    </script>
+</body>
+</html>

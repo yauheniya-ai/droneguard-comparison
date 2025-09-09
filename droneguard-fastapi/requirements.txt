@@ -1,0 +1,11 @@
+# python version 3.12
+fastapi
+uvicorn
+python-multipart
+jinja2
+opencv-python
+ultralytics
+numpy
+Pillow
+pyyaml
+aiofiles
