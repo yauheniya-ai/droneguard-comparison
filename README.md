@@ -2,6 +2,12 @@
 
 A comprehensive system to compare FastAPI vs Spring Boot drone detection applications side-by-side with real-time performance monitoring.
 
+<div align="center">
+  <img src="drone_detection_two_apps.gif" alt="Drone Detection in Two Apps" />
+  <br>
+  <em>Drone Live Detection: FastAPI vs. Spring Boot</em>
+</div>
+
 ## 🏗️ System Architecture
 
 ```

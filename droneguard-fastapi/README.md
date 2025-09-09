@@ -2,6 +2,12 @@
 
 A production-ready Python implementation of a YOLOv8-based drone detection system that processes live video streams in real-time.
 
+<div align="center">
+  <img src="dronedetection.gif" alt="Drone Detection" />
+  <br>
+  <em>Streaming App Displaying Live Drone Detection from a 1920×1080 Webcam Feed</em>
+</div>
+
 ## Project Structure
 
 ```bash
